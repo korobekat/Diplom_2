@@ -1,12 +1,20 @@
 import Models.CreateOrder;
+import Models.Order;
+import Models.OrderClient;
 import Models.User;
+import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import jdk.jfr.Description;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.UUID.randomUUID;
+import static org.junit.Assert.assertEquals;
 
 
 public class CreateOrderTest {
@@ -28,36 +36,37 @@ public class CreateOrderTest {
     @Test
     @Description("создание заказа с авторизацией и с ингредиентами")
     public void createOrderWithAuthorization(){
-        User user = helper.generateRandomUser();
+        ValidatableResponse getResponse = OrderClient.getIngredients();
+        String firstIngredient = getResponse.extract().path("data[0]._id");
+        String secondIngredient = getResponse.extract().path("data[1]._id");
+        List<String> ingredients = new ArrayList<>();
+        ingredients.add(firstIngredient);
+        ingredients.add(secondIngredient);
+        Order order = new Order();
+        order.setIngredients(ingredients);
 
-        Response registerResponse = helper.createUniqueUser(user);
-        accessToken = helper.verifyUserCreation(registerResponse, user);
-
-        var ingredients = new ArrayList<String>();
-        ingredients.add("61c0c5a71d1f82001bdaaa6d");
-        ingredients.add("61c0c5a71d1f82001bdaaa6f");
-        CreateOrder createOrder = new CreateOrder(ingredients);
-
-        Response createOrderResponse = helper.createOrderWithIngredients(accessToken, createOrder);
-        helper.verifyOrderCreation(createOrderResponse);
+        ValidatableResponse createResponse = OrderClient.create(accessToken, order);
+        assertEquals(200, createResponse.extract().statusCode());
+        assertEquals( true, createResponse.extract().path("success"));
     }
+
 
     // баг, нельзя создать заказ без авторизации
     @Test
     @Description("Отсутствие создания заказа без авторизации, но с ингредиентами)")
     public void createOrderWithoutAuthorization(){
-        User user = helper.generateRandomUser();
+        ValidatableResponse getResponse = OrderClient.getIngredients();
+        String firstIngredient = getResponse.extract().path("data[0]._id");
+        String secondIngredient = getResponse.extract().path("data[1]._id");
+        List<String> ingredients = new ArrayList<>();
+        ingredients.add(firstIngredient);
+        ingredients.add(secondIngredient);
+        Order order = new Order();
+        order.setIngredients(ingredients);
 
-        Response registerResponse = helper.createUniqueUser(user);
-        accessToken = helper.verifyUserCreation( registerResponse, user);
-
-        var ingredients = new ArrayList<String>();
-        ingredients.add("61c0c5a71d1f82001bdaaa6d");
-        ingredients.add("61c0c5a71d1f82001bdaaa73");
-        CreateOrder createOrder = new CreateOrder(ingredients);
-
-        Response createOrderResponse = helper.createOrderWithoutAuthorization(createOrder);
-        helper.verifyOrderCreationUnauthorized(createOrderResponse);
+        ValidatableResponse createResponse = OrderClient.create(null, order);
+        assertEquals( 401, createResponse.extract().statusCode());
+        assertEquals( false, createResponse.extract().path("success"));
     }
 
     @Test
@@ -91,8 +100,8 @@ public class CreateOrderTest {
         accessToken = helper.verifyUserCreation(registerResponse, user);
 
         var ingredients = new ArrayList<String>();
-        ingredients.add("dfgh444");
-        ingredients.add("45tggg");
+        ingredients.add(randomUUID().toString());
+        ingredients.add(randomUUID().toString());
         CreateOrder createOrder = new CreateOrder(ingredients);
 
         Response createOrderResponse = helper.createOrderWithInvalidIngredientsHash(accessToken, createOrder);

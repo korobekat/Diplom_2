@@ -20,6 +20,7 @@ public class Helper {
     public static final String CREATE_ORDER_METHOD = "/api/orders";
     public static final String GET_ORDERS_METHOD = "/api/orders";
     public static final String DELETE_USER_METHOD = "/api/auth/user";
+    public static final String GET_INGREDIENTS_METHOD = "/api/ingredients";
 
     public static final String DELETE_USER_MESSAGE = "User successfully removed";
     public static final String REGISTER_SAME_USER_ERROR_MESSAGE = "User already exists";
@@ -31,6 +32,20 @@ public class Helper {
     public Helper(){
         RestAssured.baseURI = "https://stellarburgers.nomoreparties.site/";
     }
+
+    // получения списка ингредиентов
+    @Step("Отправить запрос GET /api/ingredients для получения списка ингредиентов")
+    public String getIngredients() {
+        Response response = given()
+                .when()
+                .get()
+                .then()
+                .statusCode(200)
+                .extract()
+                .response();
+        return response.jsonPath().getString("data[0]._id");
+    }
+
 
     @Step("Отправить запрос DELETE на удаление пользователя по токену /api/auth/user")
     public void deleteUserByToken(String cleanToken) {
